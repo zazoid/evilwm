@@ -1,3 +1,9 @@
+evilwm (1.4.2-1-zazoid) unstable; urgency=medium
+
+  * fixed client killing
+
+ -- Alexander Gorodinski <testor@zazoid.com>  Thu, 03 Aug 2023 02:13:18 +0300
+
 evilwm (1.4.2-1) unstable; urgency=medium
 
   [ Debian Janitor ]
