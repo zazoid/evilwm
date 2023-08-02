@@ -462,35 +462,51 @@ void remove_client(struct client *c) {
 	LOG_LEAVE();
 }
 
-// Delete a window.  Sends WM_DELETE_WINDOW to a client if that protocol is
-// found to be supported.  Otherwise (or if forced by setting kill_client), use
-// XKillClient (terminates its connection to the server).
-
 void send_wm_delete(struct client *c, int kill_client) {
 	_Bool delete_supported = 0;
 	int n;
 	Atom *protocols;
+    
+    //now things are becoming ugly, but: it works. also: it shorter + corresponds to the latest xorg-team OCD-sympthoms
+    //and my aDhd
+    // sooo....
 
-	if (!kill_client && XGetWMProtocols(display.dpy, c->window, &protocols, &n)) {
-		for (int i = 0; i < n; i++)
+    Atom delete_atom = XInternAtom(display.dpy, "WM_DELETE_WINDOW", False);
+    
+    LOG_DEBUG("delete atom: %lu \n", delete_atom);
+    
+    kill_client=0; //probably I'm wrong, and also I forgot why I did this bad thing
+                   //honestly at the moment I didn't managed to figure out how all these masks
+                   //and functions from structs are working, but it's very interesting!
+	           //please explain!
+
+
+    if (!kill_client && XGetWMProtocols(display.dpy, c->window, &protocols, &n)) {
+		for (int i = 0; i < n; i++) {
+                LOG_DEBUG("i and proto: %i %lu \n", i, protocols[i]);
 			if (protocols[i] == X_ATOM(WM_DELETE_WINDOW))
 				delete_supported = 1;
+                }
 		XFree(protocols);
-	}
-	if (delete_supported) {
+    }
+
+    if (delete_supported) {
+                LOG_DEBUG("deleting modern way");
 		XEvent ev = {
 			.xclient = {
 				.type = ClientMessage,
 				.window = c->window,
-				.message_type = X_ATOM(WM_PROTOCOLS),
+				.message_type = XInternAtom(display.dpy, "WM_PROTOCOLS", True),
 				.format = 32,
-				.data.l = { X_ATOM(WM_DELETE_WINDOW), CurrentTime }
+				.data.l[0] = delete_atom
 			}
 		};
 		XSendEvent(display.dpy, c->window, False, NoEventMask, &ev);
 	} else {
 		XKillClient(display.dpy, c->window);
-	}
+                LOG_DEBUG("deleting not working way");
+
+     }
 }
 
 #ifdef SHAPE
